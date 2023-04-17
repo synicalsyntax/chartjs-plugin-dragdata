@@ -1,4 +1,5 @@
 import {Chart} from 'chart.js'
+import { getRelativePosition } from 'chart.js/helpers'
 import {drag} from 'd3-drag'
 import {select} from 'd3-selection'
 
@@ -76,7 +77,7 @@ function roundValue(value, pos) {
 }
 
 function calcRadar(e, chartInstance, curIndex) {
-  let { x: cursorX, y: cursorY } = Chart.helpers.getRelativePosition(e, chartInstance)
+  let { x: cursorX, y: cursorY } = getRelativePosition(e, chartInstance)
   const rScale = chartInstance.scales[rAxisID]
   let { x: maxX, y: maxY, angle } = rScale.getPointPositionForValue(curIndex, chartInstance.scales[rAxisID].max)
   const { xCenter, yCenter } = rScale

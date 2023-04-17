@@ -1,8 +1,8 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('chart.js')) :
-  typeof define === 'function' && define.amd ? define(['chart.js'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.index = factory(global.Chart));
-})(this, (function (chart_js) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('chart.js'), require('chart.js/helpers')) :
+  typeof define === 'function' && define.amd ? define(['chart.js', 'chart.js/helpers'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.index = factory(global.Chart, global.Chart.helpers));
+})(this, (function (chart_js, helpers) { 'use strict';
 
   var noop = {value: () => {}};
 
@@ -1362,22 +1362,30 @@
     return value
   }
 
-  function calcRadar(e, chartInstance) {
-    let x, y, v;
-    if (e.touches) {
-      x = e.touches[0].clientX - chartInstance.canvas.getBoundingClientRect().left;
-      y = e.touches[0].clientY - chartInstance.canvas.getBoundingClientRect().top;
+  function calcRadar(e, chartInstance, curIndex) {
+    let { x: cursorX, y: cursorY } = helpers.getRelativePosition(e, chartInstance);
+    const rScale = chartInstance.scales[rAxisID];
+    let { x: maxX, y: maxY, angle } = rScale.getPointPositionForValue(curIndex, chartInstance.scales[rAxisID].max);
+    const { xCenter, yCenter } = rScale;
+    
+    // make cursor and axis max value positons relative to the center of the radar chart
+    // so that we can calculate easily cosnius
+    cursorX = cursorX - xCenter;
+    cursorY = yCenter - cursorY;
+    maxX = maxX - xCenter;
+    maxY = yCenter - maxY;
+
+    
+    let v = 0;
+    
+    // If the axis is at x = 0, we calculate the distance based on position of the cursor
+    // Otherwise, we will calculate the distance based on the x position of the mouse divided by the consinus of the angle of the axis
+    if(maxX === 0) {
+      let d = maxY > 0 ? Math.max(0, cursorY) : Math.min(0, cursorY);
+      v = rScale.getValueForDistanceFromCenter(Math.abs(d));
     } else {
-      x = e.clientX - chartInstance.canvas.getBoundingClientRect().left;
-      y = e.clientY - chartInstance.canvas.getBoundingClientRect().top;
-    }
-    let rScale = chartInstance.scales[rAxisID];
-    let d = Math.sqrt(Math.pow(x - rScale.xCenter, 2) + Math.pow(y - rScale.yCenter, 2));
-    let scalingFactor = rScale.drawingArea / (rScale.max - rScale.min);
-    if (rScale.options.ticks.reverse) {
-      v = rScale.max - (d / scalingFactor);
-    } else {
-      v = rScale.min + (d / scalingFactor);
+      let d = Math.max(0, cursorX / Math.cos(angle));
+      v = rScale.getValueForDistanceFromCenter(d);
     }
 
     v = roundValue(v, chartInstance.config.options.plugins.dragData.round);
@@ -1461,7 +1469,7 @@
       let dataPoint = chartInstance.data.datasets[curDatasetIndex].data[curIndex];
 
       if (type === 'radar' || type === 'polarArea') {
-        dataPoint = calcRadar(e, chartInstance);
+        dataPoint = calcRadar(e, chartInstance, curIndex);
       } else if (stacked) {
         let cursorPos = calcPosition(e, chartInstance, curDatasetIndex, curIndex);
         dataPoint = roundValue(cursorPos - initValue, pluginOptions.round);
