@@ -62,7 +62,7 @@ const getElement = (e, chartInstance, callback) => {
     }    
     
     if (typeof callback === 'function' && element) {
-      if (callback(e, datasetIndex, index, curValue) === false) {
+      if (callback({ e, datasetIndex, index, value: curValue }) === false) {
         element = null
       }
     }
@@ -193,7 +193,7 @@ const updateData = (e, chartInstance, pluginOptions, callback) => {
       dataPoint = calcPosition(e, chartInstance, curDatasetIndex, curIndex, dataPoint)
     }
         
-    if (!callback || (typeof callback === 'function' && callback(e, curDatasetIndex, curIndex, dataPoint) !== false)) {
+    if (!callback || (typeof callback === 'function' && callback({ e, datasetIndex: curDatasetIndex, index: curIndex, value: dataPoint }) !== false)) {
       chartInstance.data.datasets[curDatasetIndex].data[curIndex] = dataPoint
       chartInstance.update('none')
     }
@@ -231,7 +231,7 @@ const dragEndCallback = (e, chartInstance, callback) => {
     const datasetIndex = element.datasetIndex
     const index = element.index
     let value = applyMagnet(chartInstance, datasetIndex, index)
-    return callback(e, datasetIndex, index, value)
+    return callback({ e, datasetIndex, index, value })
   }
 }
 
